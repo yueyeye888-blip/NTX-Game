@@ -6,9 +6,6 @@
     <title>NTX 竞技场 - 红色警戒</title>
     <script src="tailwind.js"></script>
     <script src="ethers.js" type="application/javascript"></script>
-    <!-- Web3Modal & WalletConnect -->
-    <script src="https://unpkg.com/web3modal@1.9.12/dist/index.js"></script>
-    <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -16,57 +13,6 @@
             --neon-dark-red: #b71c1c;
             --neon-gold: #FFD700;
             --bg-dark: #050505;
-        }
-
-        /* --- Web3Modal Custom Theme (Red Alert Style) --- */
-        #WEB3_CONNECT_MODAL_ID {
-            z-index: 10000 !important;
-            position: fixed !important;
-        }
-        .web3modal-modal-lightbox {
-            background: rgba(0, 0, 0, 0.8) !important;
-            backdrop-filter: blur(5px) !important;
-        }
-        .web3modal-modal-card {
-            background: #1a0505 !important;
-            border: 2px solid var(--neon-red) !important;
-            box-shadow: 0 0 30px rgba(255, 61, 0, 0.3) !important;
-            border-radius: 12px !important;
-        }
-        .web3modal-provider-container {
-            background-color: #2b1010 !important;
-            border: 1px solid #551010 !important;
-            border-radius: 8px !important;
-            padding: 20px !important;
-            transition: all 0.2s !important;
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: center !important;
-            justify-content: center !important;
-        }
-        .web3modal-provider-container:hover {
-            background-color: #3b1515 !important;
-            border-color: var(--neon-red) !important;
-            transform: translateY(-2px) !important;
-            box-shadow: 0 4px 12px rgba(255, 61, 0, 0.2) !important;
-        }
-        .web3modal-provider-name {
-            color: white !important;
-            font-family: 'Roboto Mono', monospace !important;
-            font-weight: bold !important;
-            margin-top: 10px !important;
-            font-size: 16px !important;
-        }
-        .web3modal-provider-description {
-            color: #aaa !important;
-            font-family: 'Roboto Mono', monospace !important;
-            font-size: 12px !important;
-            margin-top: 5px !important;
-            text-align: center !important;
-        }
-        .web3modal-provider-icon {
-            width: 45px !important;
-            height: 45px !important;
         }
         
         body {
@@ -640,6 +586,71 @@
         </div>
     </div>
 
+    <!-- Custom Wallet Modal -->
+    <div id="wallet-modal" class="modal" onclick="if(event.target === this) closeWalletModal()">
+        <div class="modal-content flex p-0 overflow-hidden max-w-[600px] w-[95%] h-[400px] bg-[#1a0505] border-2 border-red-600 rounded-xl shadow-[0_0_40px_rgba(255,0,0,0.2)]">
+            <!-- Left Sidebar -->
+            <div class="w-1/3 bg-[#0f0202] border-r border-red-900/30 p-4 flex flex-col gap-2">
+                <div class="text-gray-500 text-xs font-bold mb-2 uppercase tracking-wider">选择网络</div>
+                <button class="text-left px-4 py-3 rounded bg-red-900/20 text-white font-bold border-l-4 border-red-500 text-sm transition-all">
+                    EVM 链
+                </button>
+                <button class="text-left px-4 py-3 rounded hover:bg-white/5 text-gray-400 font-bold border-l-4 border-transparent text-sm transition-all">
+                    BTC 链
+                </button>
+                <button class="text-left px-4 py-3 rounded hover:bg-white/5 text-gray-400 font-bold border-l-4 border-transparent text-sm transition-all">
+                    Solana
+                </button>
+            </div>
+            
+            <!-- Right Content -->
+            <div class="w-2/3 p-6 bg-[#1a0505]">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-white">连接钱包</h3>
+                    <button onclick="closeWalletModal()" class="text-gray-500 hover:text-white text-2xl">&times;</button>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- MetaMask -->
+                    <button onclick="connectProvider('metamask')" class="flex items-center gap-3 p-3 rounded-lg bg-[#2b1010] border border-[#551010] hover:border-red-500 hover:bg-[#3b1515] transition-all group">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" class="w-8 h-8 group-hover:scale-110 transition-transform">
+                        <span class="text-sm font-bold text-gray-200 group-hover:text-white">MetaMask</span>
+                    </button>
+
+                    <!-- OKX -->
+                    <button onclick="connectProvider('okx')" class="flex items-center gap-3 p-3 rounded-lg bg-[#2b1010] border border-[#551010] hover:border-red-500 hover:bg-[#3b1515] transition-all group">
+                        <img src="https://www.okx.com/cdn/assets/imgs/247/58E639A4D4829136.png" class="w-8 h-8 rounded-full group-hover:scale-110 transition-transform">
+                        <span class="text-sm font-bold text-gray-200 group-hover:text-white">OKX Wallet</span>
+                    </button>
+
+                    <!-- Binance -->
+                    <button onclick="connectProvider('binance')" class="flex items-center gap-3 p-3 rounded-lg bg-[#2b1010] border border-[#551010] hover:border-red-500 hover:bg-[#3b1515] transition-all group">
+                        <img src="https://public.bnbstatic.com/image/cms/content/body/202309/25/d5225879-69c9-4489-8a82-0223365027a8.png" class="w-8 h-8 group-hover:scale-110 transition-transform">
+                        <span class="text-sm font-bold text-gray-200 group-hover:text-white">Binance</span>
+                    </button>
+
+                    <!-- TokenPocket -->
+                    <button onclick="connectProvider('tp')" class="flex items-center gap-3 p-3 rounded-lg bg-[#2b1010] border border-[#551010] hover:border-red-500 hover:bg-[#3b1515] transition-all group">
+                        <img src="https://help.tokenpocket.pro/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F-L_0c5F4y8b3f5s5f5f5%2Ficon%2F1602646809662.png?alt=media&token=34326265-6565-4565-8565-656565656565" class="w-8 h-8 rounded-full group-hover:scale-110 transition-transform">
+                        <span class="text-sm font-bold text-gray-200 group-hover:text-white">TokenPocket</span>
+                    </button>
+
+                    <!-- Bitget -->
+                    <button onclick="connectProvider('bitget')" class="flex items-center gap-3 p-3 rounded-lg bg-[#2b1010] border border-[#551010] hover:border-red-500 hover:bg-[#3b1515] transition-all group">
+                        <img src="https://img.bitgetimg.com/multi_lang_config/0/1663313666666.png" class="w-8 h-8 rounded-full group-hover:scale-110 transition-transform">
+                        <span class="text-sm font-bold text-gray-200 group-hover:text-white">Bitget</span>
+                    </button>
+
+                    <!-- WalletConnect (Placeholder) -->
+                    <button onclick="alert('WalletConnect v2 需要配置 Project ID，当前演示环境暂不可用。请使用上方注入式钱包。')" class="flex items-center gap-3 p-3 rounded-lg bg-[#2b1010] border border-[#551010] hover:border-red-500 hover:bg-[#3b1515] transition-all group opacity-50">
+                        <img src="https://raw.githubusercontent.com/WalletConnect/walletconnect-assets/master/Logo/Blue%20(Default)/Logo.svg" class="w-8 h-8 group-hover:scale-110 transition-transform">
+                        <span class="text-sm font-bold text-gray-200 group-hover:text-white">WalletConnect</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Game Over Modal -->
     <div id="game-over-modal" class="modal" style="z-index: 2000;">
         <div class="modal-content text-center border-4 border-red-600 bg-black">
@@ -687,125 +698,92 @@
             "function getCurrentRoundInfo() view returns (uint256, uint256, uint256, uint256[8])"
         ];
 
-        // --- Web3Modal 初始化 ---
-        let web3Modal;
+        // --- Custom Wallet Logic ---
         
-        function initWeb3Modal() {
-            const providerOptions = {
-                walletconnect: {
-                    package: WalletConnectProvider.default,
-                    options: {
-                        rpc: {
-                            56: 'https://bsc-dataseed.binance.org/',
-                            1: 'https://cloudflare-eth.com'
-                        }
-                    }
-                },
-                // 增加更多钱包支持
-                'custom-binancechainwallet': {
-                    display: {
-                        logo: "https://avatars.githubusercontent.com/u/45615063?s=200&v=4",
-                        name: "Binance Wallet",
-                        description: "Connect to your Binance Chain Wallet"
-                    },
-                    package: true,
-                    connector: async () => {
-                        let provider = null;
-                        if (typeof window.BinanceChain !== 'undefined') {
-                            provider = window.BinanceChain;
-                            try {
-                                await provider.request({ method: 'eth_requestAccounts' })
-                            } catch (error) {
-                                throw new Error("User Rejected");
-                            }
-                        } else {
-                            throw new Error("No Binance Chain Wallet found");
-                        }
-                        return provider;
-                    }
-                }
-            };
-
-            web3Modal = new Web3Modal.default({
-                cacheProvider: true, // 记住上次的选择
-                providerOptions,
-                theme: "dark",
-                disableInjectedProvider: false // 允许 MetaMask 等注入式钱包
-            });
+        function openWalletModal() {
+            document.getElementById('wallet-modal').classList.add('active');
+        }
+        
+        function closeWalletModal() {
+            document.getElementById('wallet-modal').classList.remove('active');
         }
 
-        // 页面加载时初始化
-        window.addEventListener('load', initWeb3Modal);
+        async function connectProvider(type) {
+            let ethProvider = null;
 
-        async function connectWallet() {
-            const btn = document.getElementById('connect-btn');
-            const btnText = document.getElementById('wallet-btn-addr');
-
-            // Debug helper
-            let debugEl = document.getElementById('debug-console');
-            if (!debugEl) {
-                debugEl = document.createElement('div');
-                debugEl.id = 'debug-console';
-                debugEl.style.cssText = "position:fixed; bottom:0; left:0; width:100%; height:100px; background:rgba(0,0,0,0.8); color:#0f0; font-family:monospace; font-size:10px; overflow-y:scroll; z-index:9999; padding:5px; pointer-events:none;";
-                document.body.appendChild(debugEl);
+            // 1. Select Provider based on type
+            if (type === 'metamask') {
+                if (window.ethereum) ethProvider = window.ethereum;
+            } else if (type === 'okx') {
+                if (window.okxwallet) ethProvider = window.okxwallet;
+                else if (window.ethereum?.isOkxWallet) ethProvider = window.ethereum;
+            } else if (type === 'binance') {
+                if (window.BinanceChain) ethProvider = window.BinanceChain;
+            } else if (type === 'tp') {
+                if (window.ethereum?.isTokenPocket) ethProvider = window.ethereum;
+            } else if (type === 'bitget') {
+                if (window.bitkeep?.ethereum) ethProvider = window.bitkeep.ethereum;
             }
-            const log = (msg) => {
-                console.log(msg);
-                debugEl.innerHTML += `<div>> ${msg}</div>`;
-                debugEl.scrollTop = debugEl.scrollHeight;
-            };
 
-            if (btn.disabled) return; // 防止重复点击
+            // Fallback: If specific provider not found, try generic window.ethereum
+            if (!ethProvider && window.ethereum) {
+                console.log("Specific provider not found, falling back to window.ethereum");
+                ethProvider = window.ethereum;
+            }
 
-            log("开始连接钱包...");
-            btn.disabled = true;
-            const originalText = btnText.innerText;
-            btnText.innerText = "选择钱包...";
+            if (!ethProvider) {
+                alert("未检测到该钱包插件，请先安装！");
+                return;
+            }
 
             try {
-                log("打开 Web3Modal...");
-                // 使用 Web3Modal 连接
-                const instance = await web3Modal.connect();
+                const btnText = document.getElementById('wallet-btn-addr');
+                btnText.innerText = "连接中...";
                 
-                log("Provider 获取成功");
-                provider = new ethers.providers.Web3Provider(instance);
+                // Request Accounts
+                const accounts = await ethProvider.request({ method: 'eth_requestAccounts' });
+                
+                if (!accounts || accounts.length === 0) throw new Error("No accounts found");
+                
+                userAddress = accounts[0];
+                
+                // Setup Ethers Provider
+                provider = new ethers.providers.Web3Provider(ethProvider);
                 signer = provider.getSigner();
-                
-                userAddress = await signer.getAddress();
-                log("已连接账户: " + userAddress);
-                
-                // 监听账户变化
-                instance.on("accountsChanged", (accounts) => {
-                    log("账户变更: " + accounts[0]);
-                    userAddress = accounts[0];
-                    updateUI();
-                    updateBalance();
-                });
 
-                // 监听链变化
-                instance.on("chainChanged", (chainId) => {
-                    log("链变更: " + chainId);
-                    window.location.reload();
-                });
-
-                // 更新 UI
-                updateUI();
-
-                log("初始化合约...");
+                // Setup Contracts
                 ntxContract = new ethers.Contract(NTX_TOKEN_ADDRESS, ERC20_ABI, signer);
                 arenaContract = new ethers.Contract(ARENA_CONTRACT_ADDRESS, ARENA_ABI, signer);
 
-                log("更新余额...");
+                // Update UI
+                updateUI();
                 updateBalance();
+                closeWalletModal();
+
+                // Listen for changes
+                if(ethProvider.on) {
+                    ethProvider.on('accountsChanged', (accs) => {
+                        if(accs.length > 0) {
+                            userAddress = accs[0];
+                            updateUI();
+                            updateBalance();
+                        } else {
+                            window.location.reload();
+                        }
+                    });
+                    ethProvider.on('chainChanged', () => window.location.reload());
+                }
 
             } catch (error) {
-                const errMsg = error.message || (typeof error === 'string' ? error : JSON.stringify(error));
-                log("连接取消或失败: " + errMsg);
-                console.error("完整错误:", error);
-                
-                btn.disabled = false;
-                btnText.innerText = originalText;
+                console.error("Connection Error:", error);
+                alert("连接失败: " + (error.message || "User Rejected"));
+                document.getElementById('wallet-btn-addr').innerText = "连接钱包";
             }
+        }
+
+        function connectWallet() {
+            // Replace old logic with new modal
+            openWalletModal();
         }
 
         function updateUI() {
