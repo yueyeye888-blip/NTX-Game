@@ -595,56 +595,60 @@
                 <button class="text-left px-4 py-3 rounded bg-red-900/20 text-white font-bold border-l-4 border-red-500 text-sm transition-all">
                     EVM 链
                 </button>
-                <button class="text-left px-4 py-3 rounded hover:bg-white/5 text-gray-400 font-bold border-l-4 border-transparent text-sm transition-all">
-                    BTC 链
+                <button onclick="alert('BTC 链暂未开放，敬请期待！')" class="text-left px-4 py-3 rounded hover:bg-white/5 text-gray-600 font-bold border-l-4 border-transparent text-sm transition-all cursor-not-allowed">
+                    BTC 链 <span class="text-[10px] bg-gray-800 px-1 rounded ml-1">DEV</span>
                 </button>
-                <button class="text-left px-4 py-3 rounded hover:bg-white/5 text-gray-400 font-bold border-l-4 border-transparent text-sm transition-all">
-                    Solana
+                <button onclick="alert('Solana 链暂未开放，敬请期待！')" class="text-left px-4 py-3 rounded hover:bg-white/5 text-gray-600 font-bold border-l-4 border-transparent text-sm transition-all cursor-not-allowed">
+                    Solana <span class="text-[10px] bg-gray-800 px-1 rounded ml-1">DEV</span>
                 </button>
             </div>
             
             <!-- Right Content -->
-            <div class="w-2/3 p-6 bg-[#1a0505]">
+            <div class="w-2/3 p-6 bg-[#1a0505] overflow-y-auto">
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-bold text-white">连接钱包</h3>
+                    <h3 class="text-xl font-bold text-white">连接钱包 (EVM)</h3>
                     <button onclick="closeWalletModal()" class="text-gray-500 hover:text-white text-2xl">&times;</button>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-3">
                     <!-- MetaMask -->
                     <button onclick="connectProvider('metamask')" class="flex items-center gap-3 p-3 rounded-lg bg-[#2b1010] border border-[#551010] hover:border-red-500 hover:bg-[#3b1515] transition-all group">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" class="w-8 h-8 group-hover:scale-110 transition-transform">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="MetaMask" class="w-8 h-8 group-hover:scale-110 transition-transform">
                         <span class="text-sm font-bold text-gray-200 group-hover:text-white">MetaMask</span>
                     </button>
 
                     <!-- OKX -->
                     <button onclick="connectProvider('okx')" class="flex items-center gap-3 p-3 rounded-lg bg-[#2b1010] border border-[#551010] hover:border-red-500 hover:bg-[#3b1515] transition-all group">
-                        <img src="https://www.okx.com/cdn/assets/imgs/247/58E639A4D4829136.png" class="w-8 h-8 rounded-full group-hover:scale-110 transition-transform">
+                        <img src="https://static.okx.com/cdn/assets/imgs/247/58E639A4D4829136.png" alt="OKX" class="w-8 h-8 rounded-full group-hover:scale-110 transition-transform">
                         <span class="text-sm font-bold text-gray-200 group-hover:text-white">OKX Wallet</span>
                     </button>
 
                     <!-- Binance -->
                     <button onclick="connectProvider('binance')" class="flex items-center gap-3 p-3 rounded-lg bg-[#2b1010] border border-[#551010] hover:border-red-500 hover:bg-[#3b1515] transition-all group">
-                        <img src="https://public.bnbstatic.com/image/cms/content/body/202309/25/d5225879-69c9-4489-8a82-0223365027a8.png" class="w-8 h-8 group-hover:scale-110 transition-transform">
+                        <img src="https://public.bnbstatic.com/image/cms/content/body/202309/25/d5225879-69c9-4489-8a82-0223365027a8.png" alt="Binance" class="w-8 h-8 group-hover:scale-110 transition-transform">
                         <span class="text-sm font-bold text-gray-200 group-hover:text-white">Binance</span>
                     </button>
 
                     <!-- TokenPocket -->
                     <button onclick="connectProvider('tp')" class="flex items-center gap-3 p-3 rounded-lg bg-[#2b1010] border border-[#551010] hover:border-red-500 hover:bg-[#3b1515] transition-all group">
-                        <img src="https://help.tokenpocket.pro/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F-L_0c5F4y8b3f5s5f5f5%2Ficon%2F1602646809662.png?alt=media&token=34326265-6565-4565-8565-656565656565" class="w-8 h-8 rounded-full group-hover:scale-110 transition-transform">
+                        <img src="https://tp-statics.tokenpocket.pro/logo/tokenpocket.png" alt="TP" class="w-8 h-8 rounded-full group-hover:scale-110 transition-transform">
                         <span class="text-sm font-bold text-gray-200 group-hover:text-white">TokenPocket</span>
                     </button>
 
                     <!-- Bitget -->
                     <button onclick="connectProvider('bitget')" class="flex items-center gap-3 p-3 rounded-lg bg-[#2b1010] border border-[#551010] hover:border-red-500 hover:bg-[#3b1515] transition-all group">
-                        <img src="https://img.bitgetimg.com/multi_lang_config/0/1663313666666.png" class="w-8 h-8 rounded-full group-hover:scale-110 transition-transform">
+                        <img src="https://img.bitgetimg.com/multi_lang_config/0/1663313666666.png" alt="Bitget" class="w-8 h-8 rounded-full group-hover:scale-110 transition-transform">
                         <span class="text-sm font-bold text-gray-200 group-hover:text-white">Bitget</span>
                     </button>
 
-                    <!-- WalletConnect (Placeholder) -->
-                    <button onclick="alert('WalletConnect v2 需要配置 Project ID，当前演示环境暂不可用。请使用上方注入式钱包。')" class="flex items-center gap-3 p-3 rounded-lg bg-[#2b1010] border border-[#551010] hover:border-red-500 hover:bg-[#3b1515] transition-all group opacity-50">
-                        <img src="https://raw.githubusercontent.com/WalletConnect/walletconnect-assets/master/Logo/Blue%20(Default)/Logo.svg" class="w-8 h-8 group-hover:scale-110 transition-transform">
-                        <span class="text-sm font-bold text-gray-200 group-hover:text-white">WalletConnect</span>
+                    <!-- Generic Injected -->
+                    <button onclick="connectProvider('injected')" class="flex items-center gap-3 p-3 rounded-lg bg-[#2b1010] border border-[#551010] hover:border-red-500 hover:bg-[#3b1515] transition-all group">
+                        <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                            </svg>
+                        </div>
+                        <span class="text-sm font-bold text-gray-200 group-hover:text-white">浏览器钱包</span>
                     </button>
                 </div>
             </div>
@@ -709,11 +713,13 @@
         }
 
         async function connectProvider(type) {
+            console.log("Attempting to connect to:", type);
             let ethProvider = null;
 
             // 1. Select Provider based on type
             if (type === 'metamask') {
-                if (window.ethereum) ethProvider = window.ethereum;
+                if (window.ethereum?.isMetaMask) ethProvider = window.ethereum;
+                else if (window.ethereum) ethProvider = window.ethereum; // Fallback
             } else if (type === 'okx') {
                 if (window.okxwallet) ethProvider = window.okxwallet;
                 else if (window.ethereum?.isOkxWallet) ethProvider = window.ethereum;
@@ -723,17 +729,21 @@
                 if (window.ethereum?.isTokenPocket) ethProvider = window.ethereum;
             } else if (type === 'bitget') {
                 if (window.bitkeep?.ethereum) ethProvider = window.bitkeep.ethereum;
+                else if (window.bitget?.ethereum) ethProvider = window.bitget.ethereum;
+            } else if (type === 'injected') {
+                 ethProvider = window.ethereum;
             }
 
             // Fallback: If specific provider not found, try generic window.ethereum
-            if (!ethProvider && window.ethereum) {
-                console.log("Specific provider not found, falling back to window.ethereum");
-                ethProvider = window.ethereum;
-            }
-
             if (!ethProvider) {
-                alert("未检测到该钱包插件，请先安装！");
-                return;
+                console.warn(`Specific provider for ${type} not found.`);
+                if (window.ethereum) {
+                    console.log("Falling back to generic window.ethereum");
+                    ethProvider = window.ethereum;
+                } else {
+                    alert(`未检测到 ${type} 钱包插件，请确保已安装！`);
+                    return;
+                }
             }
 
             try {
