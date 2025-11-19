@@ -6,6 +6,9 @@
     <title>NTX Arena - Red Zone</title>
     <script src="tailwind.js"></script>
     <script src="ethers.js" type="application/javascript"></script>
+    <!-- Web3Modal & WalletConnect -->
+    <script src="https://unpkg.com/web3modal@1.9.12/dist/index.js"></script>
+    <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -622,6 +625,33 @@
             "function getCurrentRoundInfo() view returns (uint256, uint256, uint256, uint256[8])"
         ];
 
+        // --- Web3Modal Initialization ---
+        let web3Modal;
+        
+        function initWeb3Modal() {
+            const providerOptions = {
+                walletconnect: {
+                    package: WalletConnectProvider.default,
+                    options: {
+                        rpc: {
+                            56: 'https://bsc-dataseed.binance.org/', // BSC
+                            1: 'https://cloudflare-eth.com', // ETH
+                            // Add other chains here
+                        },
+                    }
+                }
+            };
+
+            web3Modal = new Web3Modal.default({
+                cacheProvider: false, // optional
+                providerOptions,
+                theme: "dark"
+            });
+        }
+
+        // Initialize on load
+        window.addEventListener('load', initWeb3Modal);
+
         async function connectWallet() {
             const btn = document.getElementById('connect-btn');
             const btnText = document.getElementById('wallet-btn-addr');
@@ -645,38 +675,36 @@
             log("Starting connection process...");
             btn.disabled = true;
             const originalText = btnText.innerText;
-            btnText.innerText = "CHECK WALLET...";
-
-            if (typeof window.ethereum === 'undefined') {
-                log("MetaMask object not found in window");
-                alert("Please install MetaMask!");
-                btn.disabled = false;
-                btnText.innerText = originalText;
-                return;
-            }
+            btnText.innerText = "SELECT WALLET...";
 
             try {
-                log("Requesting accounts via window.ethereum...");
-                // Direct request to bypass potential ethers.js issues initially
-                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                log("Opening Web3Modal...");
+                // Connect via Web3Modal
+                const instance = await web3Modal.connect();
                 
-                if (!accounts || accounts.length === 0) {
-                    throw new Error("No accounts returned");
-                }
-                
-                userAddress = accounts[0];
-                log("Account connected: " + userAddress);
-
-                log("Initializing Web3Provider...");
-                provider = new ethers.providers.Web3Provider(window.ethereum);
+                log("Provider acquired");
+                provider = new ethers.providers.Web3Provider(instance);
                 signer = provider.getSigner();
                 
+                userAddress = await signer.getAddress();
+                log("Account connected: " + userAddress);
+
+                // Subscribe to accounts change
+                instance.on("accountsChanged", (accounts) => {
+                    log("Accounts changed: " + accounts[0]);
+                    userAddress = accounts[0];
+                    updateUI();
+                    updateBalance();
+                });
+
+                // Subscribe to chainId change
+                instance.on("chainChanged", (chainId) => {
+                    log("Chain changed: " + chainId);
+                    window.location.reload();
+                });
+                
                 // Update UI
-                const shortAddr = userAddress.slice(0, 4) + '...' + userAddress.slice(-4);
-                btnText.innerText = shortAddr;
-                document.getElementById('wallet-indicator').classList.remove('bg-red-500');
-                document.getElementById('wallet-indicator').classList.add('bg-green-500');
-                btn.disabled = false; // Keep enabled but connected
+                updateUI();
 
                 log("Initializing Contracts...");
                 ntxContract = new ethers.Contract(NTX_TOKEN_ADDRESS, ERC20_ABI, signer);
@@ -687,18 +715,22 @@
 
             } catch (error) {
                 const errMsg = error.message || (typeof error === 'string' ? error : JSON.stringify(error));
-                log("Error caught: " + errMsg);
+                log("Connection cancelled or failed: " + errMsg);
                 console.error("Full error:", error);
-                
-                if (error.code === 4001) {
-                    alert("Connection Rejected. Please click 'Connect' again and approve the request in your wallet popup.");
-                } else {
-                    alert("Connection failed: " + errMsg);
-                }
                 
                 btn.disabled = false;
                 btnText.innerText = originalText;
             }
+        }
+
+        function updateUI() {
+            const btn = document.getElementById('connect-btn');
+            const btnText = document.getElementById('wallet-btn-addr');
+            const shortAddr = userAddress.slice(0, 4) + '...' + userAddress.slice(-4);
+            btnText.innerText = shortAddr;
+            document.getElementById('wallet-indicator').classList.remove('bg-red-500');
+            document.getElementById('wallet-indicator').classList.add('bg-green-500');
+            btn.disabled = false;
         }
 
         async function updateBalance() {

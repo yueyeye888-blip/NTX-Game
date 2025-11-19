@@ -6,6 +6,9 @@
     <title>NTX 竞技场 - 红色警戒</title>
     <script src="tailwind.js"></script>
     <script src="ethers.js" type="application/javascript"></script>
+    <!-- Web3Modal & WalletConnect -->
+    <script src="https://unpkg.com/web3modal@1.9.12/dist/index.js"></script>
+    <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -622,6 +625,34 @@
             "function getCurrentRoundInfo() view returns (uint256, uint256, uint256, uint256[8])"
         ];
 
+        // --- Web3Modal 初始化 ---
+        let web3Modal;
+        
+        function initWeb3Modal() {
+            const providerOptions = {
+                walletconnect: {
+                    package: WalletConnectProvider.default,
+                    options: {
+                        rpc: {
+                            56: 'https://bsc-dataseed.binance.org/', // BSC
+                            1: 'https://cloudflare-eth.com', // ETH
+                            // 添加其他链的 RPC
+                        },
+                        // 如果需要支持特定链，可以在这里配置
+                    }
+                }
+            };
+
+            web3Modal = new Web3Modal.default({
+                cacheProvider: false, // 可选
+                providerOptions,
+                theme: "dark"
+            });
+        }
+
+        // 页面加载时初始化
+        window.addEventListener('load', initWeb3Modal);
+
         async function connectWallet() {
             const btn = document.getElementById('connect-btn');
             const btnText = document.getElementById('wallet-btn-addr');
@@ -645,38 +676,36 @@
             log("开始连接钱包...");
             btn.disabled = true;
             const originalText = btnText.innerText;
-            btnText.innerText = "请查看钱包...";
-
-            if (typeof window.ethereum === 'undefined') {
-                log("未检测到 MetaMask");
-                alert("请安装 MetaMask 钱包!");
-                btn.disabled = false;
-                btnText.innerText = originalText;
-                return;
-            }
+            btnText.innerText = "选择钱包...";
 
             try {
-                log("正在请求账户授权...");
-                // 尝试直接请求，绕过 ethers 初始化可能的问题
-                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                log("打开 Web3Modal...");
+                // 使用 Web3Modal 连接
+                const instance = await web3Modal.connect();
                 
-                if (!accounts || accounts.length === 0) {
-                    throw new Error("未返回账户信息");
-                }
-                
-                userAddress = accounts[0];
-                log("已连接账户: " + userAddress);
-
-                log("初始化 Web3Provider...");
-                provider = new ethers.providers.Web3Provider(window.ethereum);
+                log("Provider 获取成功");
+                provider = new ethers.providers.Web3Provider(instance);
                 signer = provider.getSigner();
                 
+                userAddress = await signer.getAddress();
+                log("已连接账户: " + userAddress);
+                
+                // 监听账户变化
+                instance.on("accountsChanged", (accounts) => {
+                    log("账户变更: " + accounts[0]);
+                    userAddress = accounts[0];
+                    updateUI();
+                    updateBalance();
+                });
+
+                // 监听链变化
+                instance.on("chainChanged", (chainId) => {
+                    log("链变更: " + chainId);
+                    window.location.reload();
+                });
+
                 // 更新 UI
-                const shortAddr = userAddress.slice(0, 4) + '...' + userAddress.slice(-4);
-                btnText.innerText = shortAddr;
-                document.getElementById('wallet-indicator').classList.remove('bg-red-500');
-                document.getElementById('wallet-indicator').classList.add('bg-green-500');
-                btn.disabled = false;
+                updateUI();
 
                 log("初始化合约...");
                 ntxContract = new ethers.Contract(NTX_TOKEN_ADDRESS, ERC20_ABI, signer);
@@ -687,18 +716,22 @@
 
             } catch (error) {
                 const errMsg = error.message || (typeof error === 'string' ? error : JSON.stringify(error));
-                log("捕获错误: " + errMsg);
+                log("连接取消或失败: " + errMsg);
                 console.error("完整错误:", error);
-                
-                if (error.code === 4001) {
-                    alert("连接被拒绝。请再次点击连接，并在钱包弹窗中点击'批准'。");
-                } else {
-                    alert("连接失败: " + errMsg);
-                }
                 
                 btn.disabled = false;
                 btnText.innerText = originalText;
             }
+        }
+
+        function updateUI() {
+            const btn = document.getElementById('connect-btn');
+            const btnText = document.getElementById('wallet-btn-addr');
+            const shortAddr = userAddress.slice(0, 4) + '...' + userAddress.slice(-4);
+            btnText.innerText = shortAddr;
+            document.getElementById('wallet-indicator').classList.remove('bg-red-500');
+            document.getElementById('wallet-indicator').classList.add('bg-green-500');
+            btn.disabled = false;
         }
 
         async function updateBalance() {
