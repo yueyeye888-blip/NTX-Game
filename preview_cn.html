@@ -666,7 +666,29 @@
         </div>
     </div>
 
+    <!-- Debug Console (Hidden by default, visible on error) -->
+    <div id="debug-console" style="display:none; position:fixed; bottom:0; left:0; width:100%; height:150px; background:rgba(0,0,0,0.9); color:#0f0; font-family:monospace; font-size:12px; overflow-y:scroll; z-index:9999; padding:10px; border-top: 2px solid #0f0;">
+        <div style="position:sticky; top:0; background:#000; border-bottom:1px solid #0f0; margin-bottom:5px; font-weight:bold;">
+            DEBUG LOG <button onclick="this.parentElement.parentElement.style.display='none'" style="float:right; color:#fff;">[X]</button>
+        </div>
+    </div>
+
     <script>
+        // Debug Logger
+        function logToScreen(msg) {
+            const consoleEl = document.getElementById('debug-console');
+            if(consoleEl) {
+                const time = new Date().toLocaleTimeString();
+                consoleEl.innerHTML += `<div>[${time}] ${msg}</div>`;
+                consoleEl.scrollTop = consoleEl.scrollHeight;
+            }
+            console.log(msg);
+        }
+
+        function showDebug() {
+            document.getElementById('debug-console').style.display = 'block';
+        }
+
         // 紧凑布局配置 (带名称)
         const ROOM_CONFIG = [
             { id: 1, name: "BTC 信仰者", x: 5, y: 5 },       // 左上
@@ -713,7 +735,14 @@
         }
 
         async function connectProvider(type) {
-            console.log("Attempting to connect to:", type);
+            showDebug(); // Show debug console on attempt
+            logToScreen(`Attempting to connect to: ${type}`);
+            
+            // Check for HTTP
+            if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                logToScreen("WARNING: You are using HTTP. Some wallets (like MetaMask) may block connections or require manual approval.");
+            }
+
             let ethProvider = null;
 
             // 1. Select Provider based on type
@@ -736,12 +765,13 @@
 
             // Fallback: If specific provider not found, try generic window.ethereum
             if (!ethProvider) {
-                console.warn(`Specific provider for ${type} not found.`);
+                logToScreen(`Specific provider for ${type} not found.`);
                 if (window.ethereum) {
-                    console.log("Falling back to generic window.ethereum");
+                    logToScreen("Falling back to generic window.ethereum");
                     ethProvider = window.ethereum;
                 } else {
                     alert(`未检测到 ${type} 钱包插件，请确保已安装！`);
+                    logToScreen("ERROR: No provider found.");
                     return;
                 }
             }
@@ -750,15 +780,19 @@
                 const btnText = document.getElementById('wallet-btn-addr');
                 btnText.innerText = "连接中...";
                 
-                // Request Accounts
-                const accounts = await ethProvider.request({ method: 'eth_requestAccounts' });
+                logToScreen("Initializing Web3Provider...");
+                // Use Ethers to wrap the provider FIRST
+                provider = new ethers.providers.Web3Provider(ethProvider);
                 
-                if (!accounts || accounts.length === 0) throw new Error("No accounts found");
+                logToScreen("Requesting accounts via provider.send('eth_requestAccounts')...");
+                // Use provider.send which wraps the low-level request and handles some errors better
+                const accounts = await provider.send("eth_requestAccounts", []);
+                
+                if (!accounts || accounts.length === 0) throw new Error("No accounts returned");
                 
                 userAddress = accounts[0];
+                logToScreen(`Connected: ${userAddress}`);
                 
-                // Setup Ethers Provider
-                provider = new ethers.providers.Web3Provider(ethProvider);
                 signer = provider.getSigner();
 
                 // Setup Contracts
@@ -786,7 +820,14 @@
 
             } catch (error) {
                 console.error("Connection Error:", error);
-                alert("连接失败: " + (error.message || "User Rejected"));
+                logToScreen(`ERROR: ${error.message || error}`);
+                
+                if ((error.message || "").includes("User Rejected")) {
+                    alert("连接被拒绝。请检查您的钱包插件是否有未处理的连接请求窗口！");
+                } else {
+                    alert("连接失败: " + (error.message || "Unknown Error"));
+                }
+                
                 document.getElementById('wallet-btn-addr').innerText = "连接钱包";
             }
         }
