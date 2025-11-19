@@ -640,6 +640,17 @@
         </div>
     </div>
 
+    <!-- Game Over Modal -->
+    <div id="game-over-modal" class="modal" style="z-index: 2000;">
+        <div class="modal-content text-center border-4 border-red-600 bg-black">
+            <h2 class="text-4xl font-bold text-red-600 mb-4 font-['Bangers'] tracking-wider animate-pulse">警告: 区域已摧毁</h2>
+            <div id="game-over-msg" class="text-white text-xl mb-6 font-mono"></div>
+            <button onclick="location.reload()" class="bg-red-700 hover:bg-red-600 text-white font-bold py-3 px-8 rounded text-lg border-2 border-red-500 shadow-[0_0_20px_rgba(255,0,0,0.5)]">
+                重新部署
+            </button>
+        </div>
+    </div>
+
     <script>
         // 紧凑布局配置 (带名称)
         const ROOM_CONFIG = [
@@ -685,19 +696,41 @@
                     package: WalletConnectProvider.default,
                     options: {
                         rpc: {
-                            56: 'https://bsc-dataseed.binance.org/', // BSC
-                            1: 'https://cloudflare-eth.com', // ETH
-                            // 添加其他链的 RPC
-                        },
-                        // 如果需要支持特定链，可以在这里配置
+                            56: 'https://bsc-dataseed.binance.org/',
+                            1: 'https://cloudflare-eth.com'
+                        }
+                    }
+                },
+                // 增加更多钱包支持
+                'custom-binancechainwallet': {
+                    display: {
+                        logo: "https://avatars.githubusercontent.com/u/45615063?s=200&v=4",
+                        name: "Binance Wallet",
+                        description: "Connect to your Binance Chain Wallet"
+                    },
+                    package: true,
+                    connector: async () => {
+                        let provider = null;
+                        if (typeof window.BinanceChain !== 'undefined') {
+                            provider = window.BinanceChain;
+                            try {
+                                await provider.request({ method: 'eth_requestAccounts' })
+                            } catch (error) {
+                                throw new Error("User Rejected");
+                            }
+                        } else {
+                            throw new Error("No Binance Chain Wallet found");
+                        }
+                        return provider;
                     }
                 }
             };
 
             web3Modal = new Web3Modal.default({
-                cacheProvider: false, // 可选
+                cacheProvider: true, // 记住上次的选择
                 providerOptions,
-                theme: "dark"
+                theme: "dark",
+                disableInjectedProvider: false // 允许 MetaMask 等注入式钱包
             });
         }
 
@@ -1087,8 +1120,11 @@
                 setTimeout(() => document.body.style.backgroundColor = '#050505', 100);
                 
                 setTimeout(() => {
-                    alert(`游戏结束！${targetId}号房间已被摧毁。`);
-                    location.reload();
+                    // 使用自定义弹窗替代 alert
+                    const modal = document.getElementById('game-over-modal');
+                    const msg = document.getElementById('game-over-msg');
+                    msg.innerText = `游戏结束！${targetId}号房间已被摧毁。`;
+                    modal.classList.add('active');
                 }, 500);
             }, 300);
         }
