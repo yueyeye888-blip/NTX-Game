@@ -612,35 +612,74 @@
         </div>
     </div>
 
-    <!-- Rules Modal -->
-    <div id="rules-modal" class="modal" onclick="if(event.target === this) closeRulesModal()">
-        <div class="modal-content text-left">
-            <h2 class="text-xl font-bold text-red-500 mb-4 font-['Bangers'] tracking-wider text-center">SURVIVAL PROTOCOL</h2>
-            <ul class="text-gray-300 text-xs space-y-3 mb-6 font-mono">
-                <li class="flex gap-2">
-                    <span class="text-yellow-500">1.</span>
-                    <span><strong class="text-white">The Arena:</strong> 8 Zones. Every round, the Bull eliminates 1 Zone.</span>
-                </li>
-                <li class="flex gap-2">
-                    <span class="text-yellow-500">2.</span>
-                    <span><strong class="text-white">Objective:</strong> Deploy NTX to any Zone you think is safe.</span>
-                </li>
-                <li class="flex gap-2">
-                    <span class="text-yellow-500">3.</span>
-                    <span><strong class="text-white">Yield:</strong> Resources from the eliminated Zone are distributed to all survivors.</span>
-                </li>
-                <li class="flex gap-2">
-                    <span class="text-yellow-500">4.</span>
-                    <span><strong class="text-white">Cycle:</strong> ~14% Yield per round for survivors.</span>
-                </li>
-            </ul>
-            <button onclick="closeRulesModal()" class="w-full bg-red-900/50 border border-red-500 hover:bg-red-800 text-white font-bold py-2 rounded text-sm">
-                UNDERSTOOD
-            </button>
+    <!-- Custom Wallet Modal -->
+    <div id="wallet-modal" class="modal" onclick="if(event.target === this) closeWalletModal()">
+        <div class="modal-content flex p-0 overflow-hidden max-w-[600px] w-[95%] h-[400px] bg-[#1a0505] border-2 border-red-600 rounded-xl shadow-[0_0_40px_rgba(255,0,0,0.2)]">
+            <!-- Left Sidebar -->
+            <div class="w-1/3 bg-[#0f0202] border-r border-red-900/30 p-4 flex flex-col gap-2">
+                <div class="text-gray-500 text-xs font-bold mb-2 uppercase tracking-wider">SELECT NETWORK</div>
+                <button class="text-left px-4 py-3 rounded bg-red-900/20 text-white font-bold border-l-4 border-red-500 text-sm transition-all">
+                    EVM CHAIN
+                </button>
+                <button onclick="alert('BTC Chain coming soon!')" class="text-left px-4 py-3 rounded hover:bg-white/5 text-gray-600 font-bold border-l-4 border-transparent text-sm transition-all cursor-not-allowed">
+                    BTC CHAIN <span class="text-[10px] bg-gray-800 px-1 rounded ml-1">DEV</span>
+                </button>
+                <button onclick="alert('Solana Chain coming soon!')" class="text-left px-4 py-3 rounded hover:bg-white/5 text-gray-600 font-bold border-l-4 border-transparent text-sm transition-all cursor-not-allowed">
+                    SOLANA <span class="text-[10px] bg-gray-800 px-1 rounded ml-1">DEV</span>
+                </button>
+            </div>
+            
+            <!-- Right Content -->
+            <div class="w-2/3 p-6 bg-[#1a0505] overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-white">CONNECT WALLET</h3>
+                    <button onclick="closeWalletModal()" class="text-gray-500 hover:text-white text-2xl">&times;</button>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- MetaMask -->
+                    <button onclick="connectProvider('metamask')" class="flex items-center gap-3 p-3 rounded-lg bg-[#2b1010] border border-[#551010] hover:border-red-500 hover:bg-[#3b1515] transition-all group">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="MetaMask" class="w-8 h-8 group-hover:scale-110 transition-transform">
+                        <span class="text-sm font-bold text-gray-200 group-hover:text-white">MetaMask</span>
+                    </button>
+
+                    <!-- OKX -->
+                    <button onclick="connectProvider('okx')" class="flex items-center gap-3 p-3 rounded-lg bg-[#2b1010] border border-[#551010] hover:border-red-500 hover:bg-[#3b1515] transition-all group">
+                        <img src="https://static.okx.com/cdn/assets/imgs/247/58E639A4D4829136.png" alt="OKX" class="w-8 h-8 rounded-full group-hover:scale-110 transition-transform">
+                        <span class="text-sm font-bold text-gray-200 group-hover:text-white">OKX Wallet</span>
+                    </button>
+
+                    <!-- Binance -->
+                    <button onclick="connectProvider('binance')" class="flex items-center gap-3 p-3 rounded-lg bg-[#2b1010] border border-[#551010] hover:border-red-500 hover:bg-[#3b1515] transition-all group">
+                        <img src="https://public.bnbstatic.com/image/cms/content/body/202309/25/d5225879-69c9-4489-8a82-0223365027a8.png" alt="Binance" class="w-8 h-8 group-hover:scale-110 transition-transform">
+                        <span class="text-sm font-bold text-gray-200 group-hover:text-white">Binance</span>
+                    </button>
+
+                    <!-- TokenPocket -->
+                    <button onclick="connectProvider('tp')" class="flex items-center gap-3 p-3 rounded-lg bg-[#2b1010] border border-[#551010] hover:border-red-500 hover:bg-[#3b1515] transition-all group">
+                        <img src="https://tp-statics.tokenpocket.pro/logo/tokenpocket.png" alt="TP" class="w-8 h-8 rounded-full group-hover:scale-110 transition-transform">
+                        <span class="text-sm font-bold text-gray-200 group-hover:text-white">TokenPocket</span>
+                    </button>
+
+                    <!-- Bitget -->
+                    <button onclick="connectProvider('bitget')" class="flex items-center gap-3 p-3 rounded-lg bg-[#2b1010] border border-[#551010] hover:border-red-500 hover:bg-[#3b1515] transition-all group">
+                        <img src="https://img.bitgetimg.com/multi_lang_config/0/1663313666666.png" alt="Bitget" class="w-8 h-8 rounded-full group-hover:scale-110 transition-transform">
+                        <span class="text-sm font-bold text-gray-200 group-hover:text-white">Bitget</span>
+                    </button>
+
+                    <!-- Generic Injected -->
+                    <button onclick="connectProvider('injected')" class="flex items-center gap-3 p-3 rounded-lg bg-[#2b1010] border border-[#551010] hover:border-red-500 hover:bg-[#3b1515] transition-all group">
+                        <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                            </svg>
+                        </div>
+                        <span class="text-sm font-bold text-gray-200 group-hover:text-white">Browser Wallet</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
-
-    <!-- Game Over Modal -->
     <div id="game-over-modal" class="modal" style="z-index: 2000;">
         <div class="modal-content text-center border-4 border-red-600 bg-black">
             <h2 class="text-4xl font-bold text-red-600 mb-4 font-['Bangers'] tracking-wider animate-pulse">WARNING: ZONE DESTROYED</h2>
@@ -687,125 +726,97 @@
             "function getCurrentRoundInfo() view returns (uint256, uint256, uint256, uint256[8])"
         ];
 
-        // --- Web3Modal Initialization ---
-        let web3Modal;
+        // --- Custom Wallet Logic ---
         
-        function initWeb3Modal() {
-            const providerOptions = {
-                walletconnect: {
-                    package: WalletConnectProvider.default,
-                    options: {
-                        rpc: {
-                            56: 'https://bsc-dataseed.binance.org/',
-                            1: 'https://cloudflare-eth.com'
-                        }
-                    }
-                },
-                // Add more wallet support
-                'custom-binancechainwallet': {
-                    display: {
-                        logo: "https://avatars.githubusercontent.com/u/45615063?s=200&v=4",
-                        name: "Binance Wallet",
-                        description: "Connect to your Binance Chain Wallet"
-                    },
-                    package: true,
-                    connector: async () => {
-                        let provider = null;
-                        if (typeof window.BinanceChain !== 'undefined') {
-                            provider = window.BinanceChain;
-                            try {
-                                await provider.request({ method: 'eth_requestAccounts' })
-                            } catch (error) {
-                                throw new Error("User Rejected");
-                            }
-                        } else {
-                            throw new Error("No Binance Chain Wallet found");
-                        }
-                        return provider;
-                    }
-                }
-            };
-
-            web3Modal = new Web3Modal.default({
-                cacheProvider: true, // Remember last selection
-                providerOptions,
-                theme: "dark",
-                disableInjectedProvider: false // Allow injected providers like MetaMask
-            });
+        function openWalletModal() {
+            document.getElementById('wallet-modal').classList.add('active');
+        }
+        
+        function closeWalletModal() {
+            document.getElementById('wallet-modal').classList.remove('active');
         }
 
-        // Initialize on load
-        window.addEventListener('load', initWeb3Modal);
+        async function connectProvider(type) {
+            console.log("Attempting to connect to:", type);
+            let ethProvider = null;
 
-        async function connectWallet() {
-            const btn = document.getElementById('connect-btn');
-            const btnText = document.getElementById('wallet-btn-addr');
-            
-            // Debug helper
-            let debugEl = document.getElementById('debug-console');
-            if (!debugEl) {
-                debugEl = document.createElement('div');
-                debugEl.id = 'debug-console';
-                debugEl.style.cssText = "position:fixed; bottom:0; left:0; width:100%; height:100px; background:rgba(0,0,0,0.8); color:#0f0; font-family:monospace; font-size:10px; overflow-y:scroll; z-index:9999; padding:5px; pointer-events:none;";
-                document.body.appendChild(debugEl);
+            // 1. Select Provider based on type
+            if (type === 'metamask') {
+                if (window.ethereum?.isMetaMask) ethProvider = window.ethereum;
+                else if (window.ethereum) ethProvider = window.ethereum; // Fallback
+            } else if (type === 'okx') {
+                if (window.okxwallet) ethProvider = window.okxwallet;
+                else if (window.ethereum?.isOkxWallet) ethProvider = window.ethereum;
+            } else if (type === 'binance') {
+                if (window.BinanceChain) ethProvider = window.BinanceChain;
+            } else if (type === 'tp') {
+                if (window.ethereum?.isTokenPocket) ethProvider = window.ethereum;
+            } else if (type === 'bitget') {
+                if (window.bitkeep?.ethereum) ethProvider = window.bitkeep.ethereum;
+                else if (window.bitget?.ethereum) ethProvider = window.bitget.ethereum;
+            } else if (type === 'injected') {
+                 ethProvider = window.ethereum;
             }
-            const log = (msg) => {
-                console.log(msg);
-                debugEl.innerHTML += `<div>> ${msg}</div>`;
-                debugEl.scrollTop = debugEl.scrollHeight;
-            };
 
-            if (btn.disabled) return; // Prevent double click
-            
-            log("Starting connection process...");
-            btn.disabled = true;
-            const originalText = btnText.innerText;
-            btnText.innerText = "SELECT WALLET...";
+            // Fallback: If specific provider not found, try generic window.ethereum
+            if (!ethProvider) {
+                console.warn(`Specific provider for ${type} not found.`);
+                if (window.ethereum) {
+                    console.log("Falling back to generic window.ethereum");
+                    ethProvider = window.ethereum;
+                } else {
+                    alert(`Wallet extension not found. Please install it first!`);
+                    return;
+                }
+            }
 
             try {
-                log("Opening Web3Modal...");
-                // Connect via Web3Modal
-                const instance = await web3Modal.connect();
+                const btnText = document.getElementById('wallet-btn-addr');
+                btnText.innerText = "CONNECTING...";
                 
-                log("Provider acquired");
-                provider = new ethers.providers.Web3Provider(instance);
+                // Request Accounts
+                const accounts = await ethProvider.request({ method: 'eth_requestAccounts' });
+                
+                if (!accounts || accounts.length === 0) throw new Error("No accounts found");
+                
+                userAddress = accounts[0];
+                
+                // Setup Ethers Provider
+                provider = new ethers.providers.Web3Provider(ethProvider);
                 signer = provider.getSigner();
-                
-                userAddress = await signer.getAddress();
-                log("Account connected: " + userAddress);
 
-                // Subscribe to accounts change
-                instance.on("accountsChanged", (accounts) => {
-                    log("Accounts changed: " + accounts[0]);
-                    userAddress = accounts[0];
-                    updateUI();
-                    updateBalance();
-                });
-
-                // Subscribe to chainId change
-                instance.on("chainChanged", (chainId) => {
-                    log("Chain changed: " + chainId);
-                    window.location.reload();
-                });
-                
-                // Update UI
-                updateUI();
-
-                log("Initializing Contracts...");
+                // Setup Contracts
                 ntxContract = new ethers.Contract(NTX_TOKEN_ADDRESS, ERC20_ABI, signer);
                 arenaContract = new ethers.Contract(ARENA_CONTRACT_ADDRESS, ARENA_ABI, signer);
 
-                log("Updating Balance...");
+                // Update UI
+                updateUI();
                 updateBalance();
+                closeWalletModal();
+
+                // Listen for changes
+                if(ethProvider.on) {
+                    ethProvider.on('accountsChanged', (accs) => {
+                        if(accs.length > 0) {
+                            userAddress = accs[0];
+                            updateUI();
+                            updateBalance();
+                        } else {
+                            window.location.reload();
+                        }
+                    });
+                    ethProvider.on('chainChanged', () => window.location.reload());
+                }
 
             } catch (error) {
-                const errMsg = error.message || (typeof error === 'string' ? error : JSON.stringify(error));
-                log("Connection cancelled or failed: " + errMsg);
-                console.error("Full error:", error);
-                
-                btn.disabled = false;
-                btnText.innerText = originalText;
+                console.error("Connection Error:", error);
+                alert("Connection Failed: " + (error.message || "User Rejected"));
+                document.getElementById('wallet-btn-addr').innerText = "CONNECT";
             }
+        }
+
+        function connectWallet() {
+            openWalletModal();
         }
 
         function updateUI() {
