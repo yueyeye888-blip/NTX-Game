@@ -691,6 +691,55 @@
     </div>
 
     <script>
+            <script>
+        // Debug Logger
+        function logToScreen(msg) {
+            const consoleEl = document.getElementById('debug-console');
+            if(consoleEl) {
+                const time = new Date().toLocaleTimeString();
+                let finalMsg = msg;
+                if (typeof msg === 'object') {
+                    try {
+                        finalMsg = JSON.stringify(msg, null, 2);
+                    } catch(e) {
+                        finalMsg = String(msg);
+                    }
+                }
+                consoleEl.innerHTML += `<div style="border-bottom:1px solid #333; padding:2px;">[${time}] ${finalMsg}</div>`;
+                consoleEl.scrollTop = consoleEl.scrollHeight;
+            }
+            console.log(msg);
+        }
+
+        // --- Game State Synchronization (Local) ---
+        const GameState = {
+            load() {
+                const now = Date.now();
+                let state = null;
+                try {
+                    state = JSON.parse(localStorage.getItem('ntx_game_state_v1'));
+                } catch(e) {}
+
+                // If no state, or state is older than 60s (round over), create new
+                if (!state || (now - state.startTime > 60000)) {
+                    state = {
+                        startTime: now,
+                        // Generate fixed random chips for this round
+                        roomChips: Array(8).fill(0).map(() => Math.floor(Math.random() * 2000) + 100),
+                        // Random target for this round
+                        targetId: Math.floor(Math.random() * 8) + 1
+                    };
+                    localStorage.setItem('ntx_game_state_v1', JSON.stringify(state));
+                }
+                return state;
+            },
+            getTimeLeft() {
+                const state = this.load();
+                const elapsed = (Date.now() - state.startTime) / 1000;
+                return Math.max(0, Math.floor(60 - elapsed));
+            }
+        };
+
         // 紧凑布局配置 (带名称)
         const ROOM_CONFIG = [
             { id: 1, name: "BTC MAXI", x: 5, y: 5 },       // 左上
@@ -928,8 +977,9 @@
 
         function init() {
             const grid = document.getElementById('arena-grid');
+            const gameState = GameState.load(); // Load synchronized state
             
-            ROOM_CONFIG.forEach(pos => {
+            ROOM_CONFIG.forEach((pos, index) => {
                 const room = document.createElement('div');
                 room.className = 'room-card';
                 room.style.left = pos.x + 'px';
@@ -960,10 +1010,11 @@
                 }
                 room.appendChild(people);
 
-                // 底部金额 (放在围栏前面一点)
+                // 底部金额 (使用同步的状态)
                 const footer = document.createElement('div');
                 footer.className = 'text-[10px] font-bold text-yellow-500 z-20 mt-1 bg-black/50 px-1 rounded';
-                footer.innerText = (Math.floor(Math.random()*2000) + 100);
+                // Use the chip count from the synchronized state based on index
+                footer.innerText = gameState.roomChips[index]; 
                 room.appendChild(footer);
 
                 grid.appendChild(room);
@@ -972,66 +1023,29 @@
             startTimer();
             startBullRampage();
         }
-
-        // 弹窗逻辑
-        function openBuyModal() {
-            document.getElementById('buy-modal').classList.add('active');
-        }
-        function closeBuyModal() {
-            document.getElementById('buy-modal').classList.remove('active');
-        }
-        function openRulesModal() {
-            document.getElementById('rules-modal').classList.add('active');
-        }
-        function closeRulesModal() {
-            document.getElementById('rules-modal').classList.remove('active');
-        }
-        function copyAddress() {
-            const addr = "0x80E265935c31aD60309a6afE6b9e1bfc697B9AD9";
-            navigator.clipboard.writeText(addr).then(() => {
-                const msg = document.getElementById('copy-msg');
-                msg.innerText = "Address Copied!";
-                setTimeout(() => msg.innerText = "", 2000);
-            });
-        }
-
-        function selectRoom(id, name, el) {
-            document.querySelectorAll('.room-card').forEach(r => r.classList.remove('selected'));
-            el.classList.add('selected');
-            selectedRoomId = id;
-            document.getElementById('selected-room-name').innerText = name;
-            updateButton();
-        }
-
-        function selectChip(amount) {
-            document.querySelectorAll('.chip-btn').forEach(b => b.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-            selectedAmount = amount;
-            updateButton();
-        }
-
-        function updateButton() {
-            const btn = document.getElementById('main-btn');
-            if (selectedRoomId && selectedAmount) {
-                btn.disabled = false;
-                btn.innerText = `BET ${selectedAmount}`;
-            } else {
-                btn.disabled = true;
-                btn.innerText = 'PLACE BET';
-            }
-        }
+        
+        // ... existing code ...
 
         function startTimer() {
             const timerEl = document.getElementById('bg-timer');
-            const interval = setInterval(() => {
-                if (timeLeft > 0) {
-                    timeLeft--;
-                    timerEl.innerText = timeLeft;
-                    if (timeLeft <= 10) timerEl.style.color = 'rgba(255, 0, 0, 0.3)';
-                } else {
-                    clearInterval(interval);
+            
+            // Clear any existing interval to prevent duplicates
+            if (window.gameTimerInterval) clearInterval(window.gameTimerInterval);
+
+            window.gameTimerInterval = setInterval(() => {
+                // Get time from shared state
+                timeLeft = GameState.getTimeLeft();
+                
+                timerEl.innerText = timeLeft;
+                if (timeLeft <= 10) timerEl.style.color = 'rgba(255, 0, 0, 0.3)';
+                
+                if (timeLeft <= 0) {
+                    clearInterval(window.gameTimerInterval);
                     isRampaging = false;
-                    finalAttack();
+                    // Only trigger final attack if not already triggered
+                    if (!document.querySelector('.impacted')) {
+                        finalAttack();
+                    }
                 }
             }, 1000);
         }
@@ -1111,9 +1125,16 @@
 
         function finalAttack() {
             const bull = document.getElementById('bull-character');
-            const targetId = Math.floor(Math.random() * 8) + 1;
+            
+            // Use synchronized target ID
+            const gameState = GameState.load();
+            // Ensure targetId is valid (1-8)
+            const targetId = gameState.targetId || (Math.floor(Math.random() * 8) + 1);
+            
             const targetRoom = document.querySelector(`.room-card[data-id="${targetId}"]`);
             
+            if (!targetRoom) return; // Safety check
+
             bull.style.transform = 'translate(-50%, -50%) scale(1.5)';
             bull.style.transition = 'all 0.2s';
             
