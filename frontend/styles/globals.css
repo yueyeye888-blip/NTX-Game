@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --neon-red: #ff0055;
+  --neon-blue: #00f3ff;
+  --neon-green: #00ff9d;
+  --neon-yellow: #fcee0a;
+  --bg-dark: #050505;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: white;
+  font-family: 'Orbitron', sans-serif; /* 建议引入 Orbitron 字体 */
+  overflow-x: hidden;
+}
+
+/* 霓虹发光效果 */
+.neon-text-red {
+  text-shadow: 0 0 5px var(--neon-red), 0 0 10px var(--neon-red), 0 0 20px var(--neon-red);
+}
+
+.neon-box-blue {
+  box-shadow: 0 0 5px var(--neon-blue), inset 0 0 5px var(--neon-blue);
+  border: 1px solid var(--neon-blue);
+}
+
+/* 屏幕震动动画 */
+@keyframes shake {
+  0% { transform: translate(1px, 1px) rotate(0deg); }
+  10% { transform: translate(-1px, -2px) rotate(-1deg); }
+  20% { transform: translate(-3px, 0px) rotate(1deg); }
+  30% { transform: translate(3px, 2px) rotate(0deg); }
+  40% { transform: translate(1px, -1px) rotate(1deg); }
+  50% { transform: translate(-1px, 2px) rotate(-1deg); }
+  60% { transform: translate(-3px, 1px) rotate(0deg); }
+  70% { transform: translate(3px, 1px) rotate(-1deg); }
+  80% { transform: translate(-1px, -1px) rotate(1deg); }
+  90% { transform: translate(1px, 2px) rotate(0deg); }
+  100% { transform: translate(1px, -2px) rotate(-1deg); }
+}
+
+.shake-hard {
+  animation: shake 0.5s;
+  animation-iteration-count: infinite;
+}

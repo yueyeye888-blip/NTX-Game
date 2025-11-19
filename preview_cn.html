@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NTX 竞技场 - 红色警戒</title>
+    <script src="tailwind.js"></script>
+    <script src="ethers.js" type="application/javascript"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-red: #FF3D00;
+            --neon-dark-red: #b71c1c;
+            --neon-gold: #FFD700;
+            --bg-dark: #050505;
+        }
+        
+        body {
+            background-color: var(--bg-dark);
+            font-family: 'Roboto Mono', monospace;
+            color: white;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        /* 赌博风格红色背景 */
+        .casino-bg {
+            position: absolute;
+            inset: 0;
+            background: 
+                /* 中心深红光晕 */
+                radial-gradient(circle at 50% 50%, rgba(100, 10, 10, 0.8) 0%, rgba(10, 5, 5, 1) 90%),
+                /* 动态网格 */
+                linear-gradient(rgba(255, 61, 0, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 61, 0, 0.1) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+            perspective: 1000px;
+            z-index: 0;
+            animation: bg-pulse 4s infinite alternate;
+        }
+
+        @keyframes bg-pulse {
+            0% { filter: brightness(1); }
+            100% { filter: brightness(1.2); }
+        }
+
+        /* 游戏主舞台 */
+        #game-stage {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        /* 顶部 HUD */
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: linear-gradient(to bottom, rgba(50, 0, 0, 0.9), transparent);
+            border-bottom: 1px solid rgba(255, 61, 0, 0.2);
+            z-index: 50;
+        }
+
+        /* 房间容器 */
+        #map-container {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            perspective: 800px;
+        }
+
+        #arena-grid {
+            position: relative;
+            width: 340px;
+            height: 340px;
+            transform-style: preserve-3d;
+            transform: rotateX(20deg) scale(1.1);
+        }
+
+        /* 房间卡片 - 3D 木质风格 */
+        .room-card {
+            position: absolute;
+            width: 105px;
+            height: 105px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end; /* 内容靠下 */
+            padding-bottom: 10px;
+            transition: all 0.2s;
+            cursor: pointer;
+            z-index: 10;
+            /* 移除旧的背景，使用 SVG */
+        }
+
+        .room-bg-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+        }
+
+        .room-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .room-card:hover .room-bg-svg path {
+            stroke: var(--neon-red);
+            stroke-width: 2px;
+        }
+
+        .room-card.selected .room-bg-svg path {
+            stroke: var(--neon-gold);
+            stroke-width: 3px;
+            filter: drop-shadow(0 0 10px var(--neon-gold));
+        }
+
+        .room-card.impacted {
+            animation: shake-red 0.3s;
+        }
+        
+        .room-card.impacted .room-bg-svg {
+            filter: sepia(1) saturate(5) hue-rotate(-50deg); /* 变红 */
+        }
+
+        /* 韭菜 (替代小人) */
+        .people-group {
+            position: absolute;
+            bottom: 25px; /* 放在围栏后面 */
+            left: 10px;
+            width: 85px;
+            height: 40px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            justify-content: center;
+            align-items: flex-end;
+            z-index: 0; /* 在围栏后面 */
+        }
+        
+        .leek {
+            width: 4px;
+            height: 12px;
+            background: linear-gradient(to top, #fff 10%, #4CAF50 40%, #2E7D32 100%);
+            border-radius: 2px;
+            position: relative;
+            animation: sway 2s infinite ease-in-out;
+            transform-origin: bottom center;
+        }
+        
+        /* 韭菜叶子 */
+        .leek::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -2px;
+            width: 4px;
+            height: 6px;
+            background: #4CAF50;
+            border-radius: 0 100% 0 0;
+            transform: rotate(-15deg);
+        }
+        .leek::after {
+            content: '';
+            position: absolute;
+            top: 1px;
+            right: -2px;
+            width: 3px;
+            height: 5px;
+            background: #66BB6A;
+            border-radius: 100% 0 0 0;
+            transform: rotate(15deg);
+        }
+
+        @keyframes sway { 
+            0%, 100% { transform: rotate(-5deg); } 
+            50% { transform: rotate(5deg); } 
+        }
+
+        /* 房间名称标签 */
+        .room-label {
+            position: absolute;
+            top: -15px;
+            background: #000;
+            color: var(--neon-gold);
+            font-size: 10px;
+            padding: 2px 6px;
+            border: 1px solid var(--neon-red);
+            border-radius: 4px;
+            font-weight: bold;
+            white-space: nowrap;
+            z-index: 20;
+            box-shadow: 0 0 5px var(--neon-red);
+        }
+
+        /* ================= CSS 卡通牛 (保留你喜欢的那个) ================= */
+        #bull-character {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 80px;
+            height: 80px;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            transition: top 0.2s linear, left 0.2s linear; /* 快速移动 */
+            pointer-events: none;
+        }
+
+        .bull-inner {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.1s;
+        }
+
+        .bull-body {
+            position: absolute;
+            top: 20px;
+            left: 10px;
+            width: 60px;
+            height: 45px;
+            background: #D50000; /* 鲜红 */
+            border-radius: 20px;
+            box-shadow: inset -5px -5px 0 rgba(0,0,0,0.3);
+            animation: body-run 0.2s infinite alternate;
+        }
+
+        .bull-head {
+            position: absolute;
+            top: 10px;
+            left: -5px;
+            width: 45px;
+            height: 40px;
+            background: #B71C1C;
+            border-radius: 14px;
+            z-index: 2;
+            animation: head-bob 0.2s infinite alternate;
+        }
+
+        .bull-horns {
+            position: absolute;
+            top: -12px;
+            left: -8px;
+            width: 60px;
+            height: 20px;
+        }
+        .bull-horns::before, .bull-horns::after {
+            content: '';
+            position: absolute;
+            width: 14px;
+            height: 30px;
+            background: #FFD700; /* 金角 */
+            border-radius: 50%;
+            top: 5px;
+            border: 2px solid #B71C1C;
+        }
+        .bull-horns::before { left: 0; transform: rotate(-30deg); }
+        .bull-horns::after { right: 0; transform: rotate(30deg); }
+
+        .bull-eyes {
+            position: absolute;
+            top: 12px;
+            left: 5px;
+            width: 35px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .eye {
+            width: 12px;
+            height: 12px;
+            background: #FFEBEE;
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 0 5px red;
+        }
+        .eye::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            right: 2px;
+            width: 6px;
+            height: 6px;
+            background: red; /* 红眼 */
+            border-radius: 50%;
+        }
+
+        .bull-nose {
+            position: absolute;
+            bottom: 6px;
+            left: 12px;
+            width: 22px;
+            height: 14px;
+            background: #FFCDD2;
+            border-radius: 10px;
+        }
+        .bull-nose-ring {
+            position: absolute;
+            bottom: -6px;
+            left: 18px;
+            width: 12px;
+            height: 12px;
+            border: 3px solid #FFD700;
+            border-radius: 50%;
+        }
+
+        @keyframes body-run { from { transform: translateY(0); } to { transform: translateY(-2px); } }
+        @keyframes head-bob { from { transform: rotate(-2deg); } to { transform: rotate(2deg); } }
+
+        /* 尘土特效 */
+        .dust {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: dust-anim 0.5s forwards;
+            pointer-events: none;
+        }
+        @keyframes dust-anim {
+            0% { transform: scale(0.5); opacity: 0.8; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+
+        /* 底部控制面板 */
+        .control-panel {
+            background: #150505;
+            border-top: 2px solid #551010;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 -10px 40px rgba(255, 0, 0, 0.1);
+            z-index: 50;
+        }
+
+        .bet-options {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .chip-btn {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: 2px dashed #551010;
+            background: #2b1010;
+            color: #aaa;
+            font-weight: bold;
+            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s;
+        }
+        
+        .chip-btn:hover { border-color: var(--neon-red); color: white; }
+        
+        .chip-btn.active {
+            background: var(--neon-gold);
+            color: black;
+            border: 2px solid white;
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+        }
+
+        .action-btn {
+            background: linear-gradient(90deg, #FF3D00, #D50000);
+            color: white;
+            font-family: 'Bangers', cursive;
+            font-size: 32px;
+            letter-spacing: 2px;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.3);
+            box-shadow: 0 6px 0 #8E0000, 0 0 20px rgba(255, 61, 0, 0.4);
+            transition: all 0.1s;
+        }
+
+        .action-btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 #8E0000;
+        }
+
+        .action-btn:disabled {
+            background: #333;
+            color: #555;
+            box-shadow: none;
+        }
+
+        /* 倒计时大字 */
+        .big-timer {
+            position: absolute;
+            top: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Bangers', cursive;
+            font-size: 100px;
+            color: rgba(255, 61, 0, 0.1);
+            pointer-events: none;
+            z-index: 0;
+            text-shadow: 0 0 20px rgba(255, 0, 0, 0.2);
+        }
+
+        /* 购买弹窗 */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: #1a0505;
+            border: 2px solid var(--neon-red);
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 0 30px rgba(255, 61, 0, 0.3);
+            text-align: center;
+        }
+        .copy-box {
+            background: #000;
+            border: 1px dashed #555;
+            padding: 10px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            color: var(--neon-gold);
+            cursor: pointer;
+        }
+        .copy-box:active { background: #222; }
+
+    </style>
+</head>
+<body>
+
+    <div class="casino-bg"></div>
+
+    <div id="game-stage">
+        
+        <!-- 顶部信息 -->
+        <div class="hud-top">
+            <div class="flex flex-col">
+                <span class="text-red-400 text-[10px] font-bold tracking-widest">幸存者瓜分奖池</span>
+                <span class="text-3xl font-bold text-yellow-400 font-mono drop-shadow-md">524,800</span>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <button onclick="openBuyModal()" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-2 py-1 rounded text-xs border border-yellow-400 shadow-[0_0_10px_rgba(255,215,0,0.3)]">
+                    购买 NTX
+                </button>
+                <button onclick="openRulesModal()" class="text-gray-400 hover:text-white text-xs font-bold border border-gray-600 px-2 py-1 rounded">
+                    规则
+                </button>
+                <a href="preview.html" class="text-gray-400 hover:text-white text-xs font-bold border border-gray-600 px-2 py-1 rounded">
+                    EN
+                </a>
+                <div class="text-right hidden sm:block">
+                    <div class="text-[10px] text-red-400">我的筹码</div>
+                    <div class="font-bold text-sm" id="user-balance">---</div>
+                </div>
+                <button id="connect-btn" onclick="connectWallet()" class="bg-red-900/50 border border-red-500 hover:bg-red-800 text-white px-3 py-2 rounded font-bold text-xs flex items-center gap-2">
+                    <div id="wallet-indicator" class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                    <span id="wallet-btn-addr">连接钱包</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 跑马灯 -->
+        <div class="bg-black/60 text-red-300 text-xs py-1 overflow-hidden whitespace-nowrap border-y border-red-900/50 z-40">
+            <div class="inline-block animate-[ticker_15s_linear_infinite]">
+                🔥 高额下注: 0x99...1a 在 #4 下注 10,000 • 🐂 疯牛正在发狂 • 💀 每局只有1个房间会被摧毁 • 💰 幸存者瓜分输家筹码 •
+            </div>
+        </div>
+
+        <!-- 背景大倒计时 -->
+        <div id="bg-timer" class="big-timer">60</div>
+
+        <!-- 中间竞技场 -->
+        <div id="map-container">
+            <div id="arena-grid">
+                <!-- 房间将通过 JS 插入到这里 -->
+                
+                <!-- 卡通牛角色 -->
+                <div id="bull-character">
+                    <div class="bull-inner">
+                        <div class="bull-horns"></div>
+                        <div class="bull-body"></div>
+                        <div class="bull-head">
+                            <div class="bull-eyes">
+                                <div class="eye"></div>
+                                <div class="eye"></div>
+                            </div>
+                            <div class="bull-nose"></div>
+                            <div class="bull-nose-ring"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 底部控制 -->
+        <div class="control-panel">
+            <div class="flex justify-between text-sm px-2">
+                <span class="text-gray-400">下注目标: <span id="selected-room-name" class="text-white font-bold">未选择</span></span>
+                <span class="text-gray-400">幸存收益: <span class="text-green-400 font-bold">~14%</span></span>
+            </div>
+
+            <div class="bet-options">
+                <button class="chip-btn" onclick="selectChip(100)">100</button>
+                <button class="chip-btn" onclick="selectChip(500)">500</button>
+                <button class="chip-btn" onclick="selectChip(1000)">1K</button>
+                <button class="chip-btn" onclick="selectChip('ALL')">ALL</button>
+            </div>
+
+            <button id="main-btn" class="action-btn" disabled onclick="placeBet()">
+                确认下注
+            </button>
+        </div>
+
+    </div>
+
+    <!-- 购买弹窗 HTML -->
+    <div id="buy-modal" class="modal" onclick="if(event.target === this) closeBuyModal()">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold text-red-500 mb-2 font-['Bangers'] tracking-wider">获取 NTX 代币</h2>
+            <p class="text-gray-400 text-xs mb-4">在 SXC 链上交易以加入竞技场。</p>
+            
+            <div class="text-left text-xs text-gray-500 mb-1">代币合约 (SXC):</div>
+            <div class="copy-box" onclick="copyAddress()" title="点击复制">
+                0x80E265935c31aD60309a6afE6b9e1bfc697B9AD9
+            </div>
+            <div id="copy-msg" class="text-green-500 text-xs h-4 mb-4"></div>
+
+            <button onclick="window.open('https://dex.sxc.com', '_blank')" class="w-full bg-yellow-600 hover:bg-yellow-500 text-black font-bold py-3 rounded mb-3">
+                前往交易所
+            </button>
+            <button onclick="closeBuyModal()" class="text-gray-500 text-sm underline">关闭</button>
+        </div>
+    </div>
+
+    <!-- Rules Modal -->
+    <div id="rules-modal" class="modal" onclick="if(event.target === this) closeRulesModal()">
+        <div class="modal-content text-left">
+            <h2 class="text-xl font-bold text-red-500 mb-4 font-['Bangers'] tracking-wider text-center">生存协议</h2>
+            <ul class="text-gray-300 text-xs space-y-3 mb-6 font-mono">
+                <li class="flex gap-2">
+                    <span class="text-yellow-500">1.</span>
+                    <span><strong class="text-white">机制:</strong> 8个区域，疯牛每轮随机摧毁1个。</span>
+                </li>
+                <li class="flex gap-2">
+                    <span class="text-yellow-500">2.</span>
+                    <span><strong class="text-white">目标:</strong> 将 NTX 部署到您认为安全的区域。</span>
+                </li>
+                <li class="flex gap-2">
+                    <span class="text-yellow-500">3.</span>
+                    <span><strong class="text-white">收益:</strong> 被摧毁区域的资源将分发给所有幸存者。</span>
+                </li>
+                <li class="flex gap-2">
+                    <span class="text-yellow-500">4.</span>
+                    <span><strong class="text-white">回报:</strong> 幸存者每轮预计获得约 14% 的资源增长。</span>
+                </li>
+            </ul>
+            <button onclick="closeRulesModal()" class="w-full bg-red-900/50 border border-red-500 hover:bg-red-800 text-white font-bold py-2 rounded text-sm">
+                我明白了
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 紧凑布局配置 (带名称)
+        const ROOM_CONFIG = [
+            { id: 1, name: "BTC 信仰者", x: 5, y: 5 },       // 左上
+            { id: 2, name: "ETH 巨鲸", x: 117.5, y: 5 },   // 中上
+            { id: 3, name: "SOL 赌狗", x: 230, y: 5 },     // 右上
+            { id: 8, name: "MEME 之王", x: 5, y: 117.5 },   // 左中
+            { id: 4, name: "NFT 倒爷", x: 230, y: 117.5 }, // 右中
+            { id: 7, name: "DeFi 矿工", x: 5, y: 230 },     // 左下
+            { id: 6, name: "DAO 治理", x: 117.5, y: 230 }, // 中下
+            { id: 5, name: "收益农夫", x: 230, y: 230 }    // 右下
+        ];
+
+        let selectedRoomId = null;
+        let selectedAmount = 0;
+        let timeLeft = 60;
+        let isRampaging = true;
+
+        // --- Web3 集成 ---
+        const NTX_TOKEN_ADDRESS = '0x80E265935c31aD60309a6afE6b9e1bfc697B9AD9';
+        const ARENA_CONTRACT_ADDRESS = '0x5bf67a611690945d396ae641df0e010a79875c8e'; // 更新后的竞技场地址
+
+        let provider, signer, userAddress;
+        let ntxContract, arenaContract;
+
+        const ERC20_ABI = [
+            "function balanceOf(address owner) view returns (uint256)",
+            "function approve(address spender, uint256 amount) returns (bool)",
+            "function allowance(address owner, address spender) view returns (uint256)"
+        ];
+
+        const ARENA_ABI = [
+            "function deposit(uint8 barnId, uint256 amount)",
+            "function getCurrentRoundInfo() view returns (uint256, uint256, uint256, uint256[8])"
+        ];
+
+        async function connectWallet() {
+            const btn = document.getElementById('connect-btn');
+            const btnText = document.getElementById('wallet-btn-addr');
+
+            // Debug helper
+            let debugEl = document.getElementById('debug-console');
+            if (!debugEl) {
+                debugEl = document.createElement('div');
+                debugEl.id = 'debug-console';
+                debugEl.style.cssText = "position:fixed; bottom:0; left:0; width:100%; height:100px; background:rgba(0,0,0,0.8); color:#0f0; font-family:monospace; font-size:10px; overflow-y:scroll; z-index:9999; padding:5px; pointer-events:none;";
+                document.body.appendChild(debugEl);
+            }
+            const log = (msg) => {
+                console.log(msg);
+                debugEl.innerHTML += `<div>> ${msg}</div>`;
+                debugEl.scrollTop = debugEl.scrollHeight;
+            };
+
+            if (btn.disabled) return; // 防止重复点击
+
+            log("开始连接钱包...");
+            btn.disabled = true;
+            const originalText = btnText.innerText;
+            btnText.innerText = "请查看钱包...";
+
+            if (typeof window.ethereum === 'undefined') {
+                log("未检测到 MetaMask");
+                alert("请安装 MetaMask 钱包!");
+                btn.disabled = false;
+                btnText.innerText = originalText;
+                return;
+            }
+
+            try {
+                log("正在请求账户授权...");
+                // 尝试直接请求，绕过 ethers 初始化可能的问题
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                
+                if (!accounts || accounts.length === 0) {
+                    throw new Error("未返回账户信息");
+                }
+                
+                userAddress = accounts[0];
+                log("已连接账户: " + userAddress);
+
+                log("初始化 Web3Provider...");
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                signer = provider.getSigner();
+                
+                // 更新 UI
+                const shortAddr = userAddress.slice(0, 4) + '...' + userAddress.slice(-4);
+                btnText.innerText = shortAddr;
+                document.getElementById('wallet-indicator').classList.remove('bg-red-500');
+                document.getElementById('wallet-indicator').classList.add('bg-green-500');
+                btn.disabled = false;
+
+                log("初始化合约...");
+                ntxContract = new ethers.Contract(NTX_TOKEN_ADDRESS, ERC20_ABI, signer);
+                arenaContract = new ethers.Contract(ARENA_CONTRACT_ADDRESS, ARENA_ABI, signer);
+
+                log("更新余额...");
+                updateBalance();
+
+            } catch (error) {
+                const errMsg = error.message || (typeof error === 'string' ? error : JSON.stringify(error));
+                log("捕获错误: " + errMsg);
+                console.error("完整错误:", error);
+                
+                if (error.code === 4001) {
+                    alert("连接被拒绝。请再次点击连接，并在钱包弹窗中点击'批准'。");
+                } else {
+                    alert("连接失败: " + errMsg);
+                }
+                
+                btn.disabled = false;
+                btnText.innerText = originalText;
+            }
+        }
+
+        async function updateBalance() {
+            if (!ntxContract) return;
+            try {
+                const balance = await ntxContract.balanceOf(userAddress);
+                const formatted = ethers.utils.formatEther(balance);
+                document.getElementById('user-balance').innerText = Math.floor(parseFloat(formatted)).toLocaleString();
+            } catch (e) {
+                console.log("获取余额失败 (可能是网络错误)", e);
+                document.getElementById('user-balance').innerText = "ERR";
+            }
+        }
+
+        async function placeBet() {
+            if (!arenaContract) {
+                alert("请先连接钱包!");
+                connectWallet();
+                return;
+            }
+            
+            if (ARENA_CONTRACT_ADDRESS === '0xfe21c10a57a1d6c4e16844b250a0764a84a4fa77') {
+                alert("竞技场合约地址未设置! 请先部署合约。");
+                return;
+            }
+
+            const amount = selectedAmount === 'ALL' ? 
+                await ntxContract.balanceOf(userAddress) : 
+                ethers.utils.parseEther(selectedAmount.toString());
+
+            try {
+                const btn = document.getElementById('main-btn');
+                const originalText = btn.innerText;
+                btn.disabled = true;
+                btn.innerText = "授权中...";
+
+                // 1. 检查授权
+                const allowance = await ntxContract.allowance(userAddress, ARENA_CONTRACT_ADDRESS);
+                if (allowance.lt(amount)) {
+                    const tx = await ntxContract.approve(ARENA_CONTRACT_ADDRESS, ethers.constants.MaxUint256);
+                    await tx.wait();
+                }
+
+                // 2. 下注
+                btn.innerText = "交易发送中...";
+                const tx = await arenaContract.deposit(selectedRoomId, amount);
+                await tx.wait();
+
+                alert("下注成功!");
+                updateBalance();
+                btn.innerText = originalText;
+                btn.disabled = false;
+
+            } catch (error) {
+                console.error(error);
+                alert("交易失败: " + (error.data?.message || error.message));
+                document.getElementById('main-btn').disabled = false;
+                document.getElementById('main-btn').innerText = "重试";
+            }
+        }
+
+        // 生成木质牛栏 SVG
+        function createPenSVG() {
+            return `
+            <svg viewBox="0 0 105 105" class="room-bg-svg" preserveAspectRatio="none">
+                <!-- 地板阴影 -->
+                <path d="M5 85 L100 85 L90 95 L15 95 Z" fill="rgba(0,0,0,0.5)" />
+                
+                <!-- 后墙 (深色木纹) -->
+                <rect x="10" y="25" width="85" height="60" fill="#2D1B1B" stroke="#3E2723" stroke-width="1"/>
+                <line x1="10" y1="40" x2="95" y2="40" stroke="#3E2723" stroke-width="1" opacity="0.5"/>
+                <line x1="10" y1="55" x2="95" y2="55" stroke="#3E2723" stroke-width="1" opacity="0.5"/>
+                <line x1="10" y1="70" x2="95" y2="70" stroke="#3E2723" stroke-width="1" opacity="0.5"/>
+
+                <!-- 顶棚 (透视) -->
+                <path d="M5 25 L52.5 5 L100 25" fill="#3E2723" stroke="#5D4037" stroke-width="2"/>
+                <path d="M15 25 L52.5 12 L90 25" fill="none" stroke="#4E342E" stroke-width="1"/>
+
+                <!-- 侧墙 (透视) -->
+                <path d="M5 25 L10 25 L10 85 L5 85 Z" fill="#3E2723" />
+                <path d="M100 25 L95 25 L95 85 L100 85 Z" fill="#3E2723" />
+
+                <!-- 前围栏 (透视木栏) -->
+                <!-- 柱子 -->
+                <rect x="5" y="25" width="5" height="65" fill="#4E342E" />
+                <rect x="95" y="25" width="5" height="65" fill="#4E342E" />
+                <rect x="30" y="60" width="4" height="30" fill="#4E342E" />
+                <rect x="70" y="60" width="4" height="30" fill="#4E342E" />
+                
+                <!-- 横栏 -->
+                <path d="M5 80 L100 80" stroke="#5D4037" stroke-width="3" />
+                <path d="M5 65 L100 65" stroke="#5D4037" stroke-width="3" />
+                
+                <!-- 门闩细节 -->
+                <rect x="45" y="62" width="15" height="20" fill="none" stroke="#8D6E63" stroke-width="1" />
+            </svg>
+            `;
+        }
+
+        function init() {
+            const grid = document.getElementById('arena-grid');
+            
+            ROOM_CONFIG.forEach(pos => {
+                const room = document.createElement('div');
+                room.className = 'room-card';
+                room.style.left = pos.x + 'px';
+                room.style.top = pos.y + 'px';
+                room.dataset.id = pos.id;
+                room.onclick = () => selectRoom(pos.id, pos.name, room);
+
+                // 插入 SVG 背景
+                room.innerHTML = createPenSVG();
+
+                // 房间名称标签
+                const label = document.createElement('div');
+                label.className = 'room-label';
+                label.innerText = pos.name;
+                room.appendChild(label);
+                
+                // 韭菜群
+                const people = document.createElement('div');
+                people.className = 'people-group';
+                // 随机生成一些韭菜
+                for(let i=0; i<Math.random()*15+5; i++) {
+                    const p = document.createElement('div');
+                    p.className = 'leek';
+                    p.style.animationDelay = (Math.random() * 2) + 's';
+                    // 随机高度
+                    p.style.height = (Math.random() * 8 + 8) + 'px';
+                    people.appendChild(p);
+                }
+                room.appendChild(people);
+
+                // 底部金额 (放在围栏前面一点)
+                const footer = document.createElement('div');
+                footer.className = 'text-[10px] font-bold text-yellow-500 z-20 mt-1 bg-black/50 px-1 rounded';
+                footer.innerText = (Math.floor(Math.random()*2000) + 100);
+                room.appendChild(footer);
+
+                grid.appendChild(room);
+            });
+
+            startTimer();
+            startBullRampage();
+        }
+
+        // 弹窗逻辑
+        function openBuyModal() {
+            document.getElementById('buy-modal').classList.add('active');
+        }
+        function closeBuyModal() {
+            document.getElementById('buy-modal').classList.remove('active');
+        }
+        function openRulesModal() {
+            document.getElementById('rules-modal').classList.add('active');
+        }
+        function closeRulesModal() {
+            document.getElementById('rules-modal').classList.remove('active');
+        }
+        function copyAddress() {
+            const addr = "0x80E265935c31aD60309a6afE6b9e1bfc697B9AD9";
+            navigator.clipboard.writeText(addr).then(() => {
+                const msg = document.getElementById('copy-msg');
+                msg.innerText = "地址已复制!";
+                setTimeout(() => msg.innerText = "", 2000);
+            });
+        }
+
+        function selectRoom(id, name, el) {
+            document.querySelectorAll('.room-card').forEach(r => r.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedRoomId = id;
+            document.getElementById('selected-room-name').innerText = name;
+            updateButton();
+        }
+
+        function selectChip(amount) {
+            document.querySelectorAll('.chip-btn').forEach(b => b.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            selectedAmount = amount;
+            updateButton();
+        }
+
+        function updateButton() {
+            const btn = document.getElementById('main-btn');
+            if (selectedRoomId && selectedAmount) {
+                btn.disabled = false;
+                btn.innerText = `下注 ${selectedAmount}`;
+            } else {
+                btn.disabled = true;
+                btn.innerText = '确认下注';
+            }
+        }
+
+        function startTimer() {
+            const timerEl = document.getElementById('bg-timer');
+            const interval = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    timerEl.innerText = timeLeft;
+                    if (timeLeft <= 10) timerEl.style.color = 'rgba(255, 0, 0, 0.3)';
+                } else {
+                    clearInterval(interval);
+                    isRampaging = false;
+                    finalAttack();
+                }
+            }, 1000);
+        }
+
+        // 疯牛持续冲撞逻辑 (保留你喜欢的全场奔袭)
+        function startBullRampage() {
+            if (!isRampaging) return;
+
+            const bull = document.getElementById('bull-character');
+            const bullInner = bull.querySelector('.bull-inner');
+            
+            // 1. 随机选择一个目标房间
+            const targetIndex = Math.floor(Math.random() * ROOM_CONFIG.length);
+            const target = ROOM_CONFIG[targetIndex];
+            
+            // 2. 计算冲撞点
+            const roomCX = target.x + 52.5;
+            const roomCY = target.y + 52.5;
+            const arenaCX = 170;
+            const arenaCY = 170;
+            
+            const dx = roomCX - arenaCX;
+            const dy = roomCY - arenaCY;
+            
+            const distance = Math.sqrt(dx*dx + dy*dy);
+            const moveRatio = 60 / distance; 
+            
+            const moveX = arenaCX + dx * moveRatio;
+            const moveY = arenaCY + dy * moveRatio;
+
+            // 3. 移动牛
+            bull.style.left = moveX + 'px';
+            bull.style.top = moveY + 'px';
+            
+            // 转向
+            if (dx > 0) {
+                bullInner.style.transform = 'scaleX(-1)'; 
+            } else {
+                bullInner.style.transform = 'scaleX(1)'; 
+            }
+
+            // 4. 撞击动作
+            setTimeout(() => {
+                const hitX = arenaCX + dx * (moveRatio + 0.2);
+                const hitY = arenaCY + dy * (moveRatio + 0.2);
+                
+                bull.style.left = hitX + 'px';
+                bull.style.top = hitY + 'px';
+                
+                // 房间震动
+                const roomEl = document.querySelector(`.room-card[data-id="${target.id}"]`);
+                roomEl.classList.add('impacted');
+                createDust(hitX, hitY);
+
+                setTimeout(() => {
+                    roomEl.classList.remove('impacted');
+                    
+                    // 5. 回到中心
+                    setTimeout(() => {
+                        bull.style.left = '170px';
+                        bull.style.top = '170px';
+                        setTimeout(startBullRampage, 300); // 快速循环
+                    }, 150);
+                }, 150);
+            }, 250);
+        }
+
+        function createDust(x, y) {
+            const grid = document.getElementById('arena-grid');
+            const dust = document.createElement('div');
+            dust.className = 'dust';
+            dust.style.left = x + 'px';
+            dust.style.top = y + 'px';
+            grid.appendChild(dust);
+            setTimeout(() => dust.remove(), 500);
+        }
+
+        function finalAttack() {
+            const bull = document.getElementById('bull-character');
+            const targetId = Math.floor(Math.random() * 8) + 1;
+            const targetRoom = document.querySelector(`.room-card[data-id="${targetId}"]`);
+            
+            bull.style.transform = 'translate(-50%, -50%) scale(1.5)';
+            bull.style.transition = 'all 0.2s';
+            
+            const rect = targetRoom.style;
+            const tx = parseInt(rect.left) + 50;
+            const ty = parseInt(rect.top) + 50;
+            
+            bull.style.left = tx + 'px';
+            bull.style.top = ty + 'px';
+            
+            setTimeout(() => {
+                targetRoom.classList.add('impacted');
+                targetRoom.style.filter = 'grayscale(100%) brightness(0.5)';
+                document.body.style.backgroundColor = '#FF3D00';
+                setTimeout(() => document.body.style.backgroundColor = '#050505', 100);
+                
+                setTimeout(() => {
+                    alert(`游戏结束！${targetId}号房间已被摧毁。`);
+                    location.reload();
+                }, 500);
+            }, 300);
+        }
+
+        init();
+
+    </script>
+</body>
+</html>
